@@ -1,8 +1,10 @@
 package acad.ifma.edu.campeonato_v2.domain.service;
 
 import acad.ifma.edu.campeonato_v2.domain.dto.TimeDTO;
+import acad.ifma.edu.campeonato_v2.domain.model.Estadio;
 import acad.ifma.edu.campeonato_v2.domain.model.Jogador;
 import acad.ifma.edu.campeonato_v2.domain.model.Time;
+import acad.ifma.edu.campeonato_v2.domain.repository.EstadioRepository;
 import acad.ifma.edu.campeonato_v2.domain.repository.TimeRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,16 +18,25 @@ import java.util.stream.Collectors;
 public class TimeService {
 
     private final TimeRepository timeRepository;
+    private final EstadioRepository estadioRepository;
 
     @Autowired
-    public TimeService(TimeRepository timeRepository) {
+    public TimeService(TimeRepository timeRepository, EstadioRepository estadioRepository) {
         this.timeRepository = timeRepository;
+        this.estadioRepository = estadioRepository;
     }
 
     public List<TimeDTO> listarTodos() {
+
         return timeRepository.findAll()
                 .stream()
-                .map(this::toDto)
+                .map(t -> new TimeDTO(
+                        t.getId(),
+                        t.getNome(),
+                        t.getEstadio()!=null? t.getEstadio().getId():-1,
+                        t.getJogadores().stream().map(Jogador::getNome).collect(Collectors.toList()),
+                        t.getEstadio()
+                ))
                 .collect(Collectors.toList());
     }
 
@@ -64,8 +75,9 @@ public class TimeService {
                 .map(t -> new TimeDTO(
                         t.getId(),
                         t.getNome(),
-                        t.getEstadio(),
-                        t.getJogadores().stream().map(Jogador::getNome).collect(Collectors.toList())
+                        t.getEstadio().getId(),
+                        t.getJogadores().stream().map(Jogador::getNome).collect(Collectors.toList()),
+                        t.getEstadio()
 
                 )).collect(Collectors.toList());
     }
@@ -79,20 +91,44 @@ public class TimeService {
                 .map(Jogador::getNome)
                 .collect(Collectors.toList())
                 : List.of();
-        String estadioNome = time.getEstadio() != null ? time.getEstadio().getNome() : null;
-        return new TimeDTO(
+        int estadioId = -1;
+        if(time.getEstadio() != null) {
+            estadioId = time.getEstadio().getId();
+        }
+
+        TimeDTO timeDto = new TimeDTO(
                 time.getId(),
                 time.getNome(),
-                time.getEstadio(),
-                nomesJogadores
+                estadioId,
+                nomesJogadores,
+                time.getEstadio()
         );
+        timeDto.setEstadio(time.getEstadio());
+        return timeDto;
     }
+
+    /*FUNÇÕES AUXILIARES*/
 
     private Time toEntity(TimeDTO dto) {
         Time time = new Time();
+
+
         time.setNome(dto.getNome());
-        // se precisar associar estádio pelo nome, injete EstadioRepository e faça lookup aqui
-        // jogadores não são criados via TimeService
+
+        //Encontra estádio
+        Estadio estadio = buscarEstadioPorId(dto.getEstadioId());
+        time.setEstadio(estadio);
+
         return time;
     }
+
+    private Estadio buscarEstadioPorId(Integer idEstadio) {
+        Optional<Estadio> estadio = estadioRepository.findById(idEstadio);
+        if (estadio.isPresent()) {
+            return estadio.get();
+        }
+        return null;
+    }
+
+
 }

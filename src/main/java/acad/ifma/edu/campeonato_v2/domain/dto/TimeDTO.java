@@ -15,13 +15,15 @@ public class TimeDTO {
 
     @NotBlank(message = "O nome do time não pode ser vazio.")
     private String nome;
-    private Estadio estadio;
+    private int estadioId;
     private List<String> jogadores_nomes;
+    private Estadio estadio;
 
-    public TimeDTO(int id, String nome, Estadio estadio, List<String> jogadores_nomes) {
+    public TimeDTO(int id, String nome, int estadioId, List<String> jogadores_nomes, Estadio estadio) {
         this.id = id;
         this.nome = nome;
-        this.estadio = estadio;
+        this.estadioId = estadioId;
         this.jogadores_nomes = jogadores_nomes;
+        this.estadio = estadio;
     }
 }
