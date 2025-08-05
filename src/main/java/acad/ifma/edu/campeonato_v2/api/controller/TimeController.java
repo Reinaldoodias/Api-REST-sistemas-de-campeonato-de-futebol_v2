@@ -70,15 +70,6 @@ public class TimeController {
         return ResponseEntity.notFound().build(); // Se o ID não for encontrado, retorna 404.
     }
 
-    @GetMapping("/campeonatos/{id}/times")
-    public ResponseEntity<List<TimeDTO>> listarPorCampeonato(@PathVariable Integer id) {
-        List<TimeDTO> times = timeService.listarPorCampeonato(id);
-        return ResponseEntity.ok(times);
-    }
-
-
-
-
 
 
 }

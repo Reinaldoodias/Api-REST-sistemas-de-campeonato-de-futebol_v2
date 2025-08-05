@@ -1,7 +1,11 @@
 package acad.ifma.edu.campeonato_v2.domain.service;
 
+import acad.ifma.edu.campeonato_v2.api.controller.auxiliares.NotFoundException;
+import acad.ifma.edu.campeonato_v2.domain.auxiliares.Conversoes;
 import acad.ifma.edu.campeonato_v2.domain.dto.CampeonatoDTO;
+import acad.ifma.edu.campeonato_v2.domain.dto.TimeDTO;
 import acad.ifma.edu.campeonato_v2.domain.model.Campeonato;
+import acad.ifma.edu.campeonato_v2.domain.model.Jogador;
 import acad.ifma.edu.campeonato_v2.domain.model.Partida;
 import acad.ifma.edu.campeonato_v2.domain.model.Time;
 import acad.ifma.edu.campeonato_v2.domain.repository.CampeonatoRepository;
@@ -11,6 +15,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -20,6 +25,8 @@ public class CampeonatoService {
 
     private final CampeonatoRepository campeonatoRepository;
     private final TimeRepository timeRepository;
+
+    Conversoes conversoes = new Conversoes();
 
     @Autowired
     private ModelMapper modelMapper;
@@ -33,38 +40,30 @@ public class CampeonatoService {
     public List<CampeonatoDTO> listarTodos() {
         List<Campeonato> campeonatos = campeonatoRepository.findAll();
         return campeonatos.stream()
-                .map(c -> new CampeonatoDTO(
-                        c.getId(),
-                        c.getNome(),
-                        c.getAno(),
-                        c.getTimes().stream()
-                                .map(Time::getNome)
-                                .collect(Collectors.toList())
-
-                ))
+                .map(conversoes::campeonatotoDto)
                         .collect(Collectors.toList());
     }
 
     public Optional<CampeonatoDTO> buscarPorId(int id) {
         return campeonatoRepository.findById(id)
-                .map(this::toDto);
+                .map(conversoes::campeonatotoDto);
     }
 
     @Transactional
     public CampeonatoDTO salvar(CampeonatoDTO campeonatoDTO) {
-        Campeonato campeonato = toEntity(campeonatoDTO);
+        Campeonato campeonato = conversoes.campeonatotoEntity(campeonatoDTO);
         campeonatoRepository.save(campeonato);
-        return toDto(campeonato);
+        return conversoes.campeonatotoDto(campeonato);
     }
 
     @Transactional
     public CampeonatoDTO atualizar(int id, CampeonatoDTO campeonatoDTO) {
         Campeonato existente = campeonatoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Campeonato não encontrado: " + id));
-        Campeonato atualizado = toEntity(campeonatoDTO);
+        Campeonato atualizado = conversoes.campeonatotoEntity(campeonatoDTO);
         atualizado.setId(id);
         atualizado = campeonatoRepository.save(atualizado);
-        return toDto(atualizado);
+        return conversoes.campeonatotoDto(atualizado);
     }
 
     @Transactional
@@ -73,31 +72,20 @@ public class CampeonatoService {
         return true;
     }
 
-    // MÉTODOS AUXILIARES
-
-    private CampeonatoDTO toDto(Campeonato c) {
-        CampeonatoDTO dto = new CampeonatoDTO(
-                c.getId(),
-                c.getNome(),
-                c.getAno(),
-                c.getTimes().stream().map(Time::getNome).collect(Collectors.toList())
-        );
-        return dto;
-    }
+    public List<TimeDTO> listarTimes(int campeonatoId) {
+        Campeonato campeonato = campeonatoRepository.findById(campeonatoId)
+                .orElseThrow(()-> new NotFoundException("Campeonato com ID:" + campeonatoId + " Não encontrado."));
 
 
-    private Campeonato toEntity(CampeonatoDTO dto) {
-        Campeonato camp = new Campeonato();
-        camp.setId(dto.getId());
-        camp.setNome(dto.getNome());
-        camp.setAno(dto.getAno());
+        List<Time> times = campeonato.getTimes();
 
-        if (dto.getTimesNomes() != null) {
-            List<Time> times = timeRepository.findByNomeIn(dto.getTimesNomes());
-            camp.setTimes(times);
-        }
+        List<TimeDTO> timeDTOs = times
+                .stream()
+                .map(conversoes::timetoDto)
+                .collect(Collectors.toList());
 
-        return camp;
+        return timeDTOs;
+
     }
 
 }

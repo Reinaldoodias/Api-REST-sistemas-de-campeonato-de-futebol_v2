@@ -1,5 +1,6 @@
 package acad.ifma.edu.campeonato_v2.domain.service;
 
+import acad.ifma.edu.campeonato_v2.domain.auxiliares.Conversoes;
 import acad.ifma.edu.campeonato_v2.domain.dto.EnderecoDTO;
 import acad.ifma.edu.campeonato_v2.domain.dto.EstadioDTO;
 import acad.ifma.edu.campeonato_v2.domain.dto.PartidaDTO;
@@ -34,35 +35,32 @@ public class PartidaService {
     @Autowired
     private CampeonatoRepository campeonatoRepository;
 
+    Conversoes conversoes = new Conversoes();
+
+
     @Autowired
     public PartidaService(PartidaRepository partidaRepository) {
         this.partidaRepository = partidaRepository;
     }
 
+
     public List<PartidaDTO> listarTodas() {
         return partidaRepository.findAll()
-                .stream().map(p -> new PartidaDTO(
-                        p.getId(),
-                        p.getData(),
-                        p.getMandante().getNome(),
-                        p.getVisitante().getNome(),
-                        p.getEstadio().getNome(),
-                        p.getCampeonato().getNome(),
-                        p.getResultado()))
+                .stream().map(conversoes::partidatoDto)
                 .collect(Collectors.toList());
     }
 
     public Optional<PartidaDTO> buscarPorId(Integer id) {
         return partidaRepository.findById(id)
-                .map(this::toDto);
+                .map(conversoes::partidatoDto);
     }
 
 
     @Transactional
     public PartidaDTO salvar(PartidaDTO partidaDto) {
-        Partida partida = toEntity(partidaDto);
+        Partida partida = conversoes.partidatoEntity(partidaDto);
         partidaRepository.save(partida);
-        return toDto(partida);
+        return conversoes.partidatoDto(partida);
 
     }
 
@@ -70,10 +68,10 @@ public class PartidaService {
     public PartidaDTO atualizar(Integer id, PartidaDTO partidaDto) {
         Partida existente = partidaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Partida não encontrado: " + id));
-        Partida atualizada = toEntity(partidaDto);
+        Partida atualizada = conversoes.partidatoEntity(partidaDto);
         atualizada.setId(id);
         atualizada = partidaRepository.save(atualizada);
-        return toDto(atualizada);
+        return conversoes.partidatoDto(atualizada);
     }
 
     @Transactional
@@ -82,49 +80,4 @@ public class PartidaService {
         return true;
     }
 
-
-    /*Métodos auxiliares*/
-
-    private PartidaDTO toDto(Partida p) {
-        PartidaDTO dto = new PartidaDTO(p.getId(),
-                p.getData(),
-                p.getMandante().getNome(),
-                p.getVisitante().getNome(),
-                p.getEstadio().getNome(),
-                p.getCampeonato().getNome(),
-                p.getResultado());
-
-        return dto;
-    }
-
-    private Partida toEntity(PartidaDTO dto) {
-        Partida e = new Partida();
-        e.setId(dto.getId());
-        e.setData(dto.getData());
-        e.setResultado(dto.getResultado());
-
-        //Acha time Mandante
-        if (dto.getMandante() != null) {
-            Time m = timeRepository.findByNome(dto.getMandante())
-                    .orElseThrow(() -> new RuntimeException("Time não encontrado: " + dto.getMandante()));
-            e.setMandante(m);
-        }
-        //acha Time visitante
-        if (dto.getVisitante() != null) {
-            Time v = timeRepository.findByNome(dto.getVisitante())
-                    .orElseThrow(() -> new RuntimeException("Time não encontrado: " + dto.getVisitante()));
-            e.setVisitante(v);
-        }
-        //Acha Estadio
-        if (dto.getEstadio() != null) {
-            Estadio estadio = estadioRepository.findByNome(dto.getEstadio());
-            e.setEstadio(estadio);
-        }
-        //Acha campeonato
-        if (dto.getCampeonato() != null) {
-            Campeonato camp = campeonatoRepository.findByNome(dto.getCampeonato());
-            e.setCampeonato(camp);
-        }
-        return e;
-    }
 }

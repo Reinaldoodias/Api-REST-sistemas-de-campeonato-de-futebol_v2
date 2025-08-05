@@ -1,5 +1,6 @@
 package acad.ifma.edu.campeonato_v2.domain.service;
 
+import acad.ifma.edu.campeonato_v2.domain.auxiliares.Conversoes;
 import acad.ifma.edu.campeonato_v2.domain.dto.JogadorDto;
 import acad.ifma.edu.campeonato_v2.domain.model.Jogador;
 import acad.ifma.edu.campeonato_v2.domain.model.Time;
@@ -19,6 +20,9 @@ public class JogadorService {
     private final JogadorRepository repository;
     private final TimeRepository timeRepository;
 
+    Conversoes conversoes = new Conversoes();
+
+
     @Autowired
     public JogadorService(JogadorRepository repository, TimeRepository timeRepository) {
         this.repository = repository;
@@ -27,21 +31,21 @@ public class JogadorService {
 
     public List<JogadorDto> todos() {
         return repository.findAll().stream()
-                .map(this::toDto)
+                .map(conversoes::jogadortoDto)
                 .collect(Collectors.toList());
     }
 
     public Optional<JogadorDto> buscarPorId(Integer id) {
         return repository.findById(id)
-                .map(this::toDto);
+                .map(conversoes::jogadortoDto);
     }
 
     @Transactional
     public JogadorDto salvar(JogadorDto dto) {
-        Jogador entidade = toEntity(dto);
+        Jogador entidade = conversoes.jogadortoEntity(dto);
         // salva e atualiza id gerado
         entidade = repository.save(entidade);
-        return toDto(entidade);
+        return conversoes.jogadortoDto(entidade);
     }
 
     @Transactional
@@ -49,10 +53,10 @@ public class JogadorService {
         // garante existência
         Jogador existente = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Jogador não encontrado: " + id));
-        Jogador atualizado = toEntity(dto);
+        Jogador atualizado = conversoes.jogadortoEntity(dto);
         atualizado.setId(id);
         atualizado = repository.save(atualizado);
-        return toDto(atualizado);
+        return conversoes.jogadortoDto(atualizado);
     }
 
     @Transactional
@@ -60,34 +64,4 @@ public class JogadorService {
         repository.deleteById(id);
     }
 
-    // --- conversões manuais ---
-
-    private JogadorDto toDto(Jogador j) {
-        return new JogadorDto(
-                j.getId(),
-                j.getNome(),
-                j.getNascimento(),
-                j.getGenero(),
-                j.getAltura(),
-                j.getTime() != null ? j.getTime().getNome() : null
-        );
-    }
-
-    private Jogador toEntity(JogadorDto dto) {
-        Jogador j = new Jogador();
-        // campos simples
-        j.setNome(dto.getNome());
-        j.setNascimento(dto.getNascimento());
-        j.setGenero(dto.getGenero());
-        j.setAltura(dto.getAltura());
-
-        // busca o Time pelo nome
-        if (dto.getTime() != null) {
-            Time t = timeRepository.findByNome(dto.getTime())
-                    .orElseThrow(() -> new RuntimeException("Time não encontrado: " + dto.getTime()));
-            j.setTime(t);
-        }
-
-        return j;
-    }
 }

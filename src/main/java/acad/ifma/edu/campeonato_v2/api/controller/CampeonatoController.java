@@ -1,6 +1,8 @@
 package acad.ifma.edu.campeonato_v2.api.controller;
 
 import acad.ifma.edu.campeonato_v2.domain.dto.CampeonatoDTO;
+import acad.ifma.edu.campeonato_v2.domain.dto.TimeDTO;
+import acad.ifma.edu.campeonato_v2.domain.model.Time;
 import acad.ifma.edu.campeonato_v2.domain.service.CampeonatoService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,5 +63,13 @@ public class CampeonatoController {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.notFound().build();
+    }
+
+
+    //Lista times
+    @GetMapping("/{id}/times")
+    public ResponseEntity<List<TimeDTO>> listarTimes(@PathVariable Integer id) {
+        List<TimeDTO> times = campeonatoService.listarTimes(id);
+        return ResponseEntity.ok(times);
     }
 }

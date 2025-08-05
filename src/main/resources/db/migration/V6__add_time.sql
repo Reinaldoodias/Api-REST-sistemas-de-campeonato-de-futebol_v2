@@ -1,0 +1,1 @@
+INSERT INTO time(nome) VALUES ('Cruzeiro FC')

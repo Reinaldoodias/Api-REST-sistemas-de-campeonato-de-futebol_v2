@@ -1,6 +1,7 @@
 // Service EstadioService.java
 package acad.ifma.edu.campeonato_v2.domain.service;
 
+import acad.ifma.edu.campeonato_v2.domain.auxiliares.Conversoes;
 import acad.ifma.edu.campeonato_v2.domain.dto.EnderecoDTO;
 import acad.ifma.edu.campeonato_v2.domain.dto.EstadioDTO;
 import acad.ifma.edu.campeonato_v2.domain.model.Endereco;
@@ -18,6 +19,8 @@ import java.util.stream.Collectors;
 public class EstadioService {
 
     private final EstadioRepository estadioRepository;
+    Conversoes conversoes = new Conversoes();
+
 
     @Autowired
     public EstadioService(EstadioRepository estadioRepository) {
@@ -33,24 +36,24 @@ public class EstadioService {
 
     public Optional<EstadioDTO> buscarPorId(Integer id) {
         return estadioRepository.findById(id)
-                .map(this::toDto);
+                .map(conversoes::estadiotoDto);
     }
 
     @Transactional
     public EstadioDTO salvar(EstadioDTO dto) {
-        Estadio entidade = toEntity(dto);
+        Estadio entidade = conversoes.estadiotoEntity(dto);
         Estadio salvo = estadioRepository.save(entidade);
-        return toDto(salvo);
+        return conversoes.estadiotoDto(salvo);
     }
 
     @Transactional
     public EstadioDTO atualizar(Integer id, EstadioDTO dto) {
         Estadio existente = estadioRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Estádio não encontrado: " + id));
-        Estadio atualizado = toEntity(dto);
+        Estadio atualizado = conversoes.estadiotoEntity(dto);
         atualizado.setId(id);
         atualizado = estadioRepository.save(atualizado);
-        return toDto(atualizado);
+        return conversoes.estadiotoDto(atualizado);
     }
 
     @Transactional
@@ -58,43 +61,4 @@ public class EstadioService {
         estadioRepository.deleteById(id);
     }
 
-    // Métodos auxiliares de conversão manual
-
-    private EstadioDTO toDto(Estadio e) {
-        Endereco end = e.getEndereco();
-        EnderecoDTO enderecoDto = new EnderecoDTO();
-        if (end != null) {
-            enderecoDto.setCep(end.getCep());
-            enderecoDto.setLogradouro(end.getLogradouro());
-            enderecoDto.setNumero(end.getNumero());
-            enderecoDto.setComplemento(end.getComplemento());
-            enderecoDto.setBairro(end.getBairro());
-            enderecoDto.setCidade(end.getCidade());
-            enderecoDto.setUf(end.getUf());
-        }
-
-        EstadioDTO dto = new EstadioDTO();
-        dto.setId(e.getId());
-        dto.setNome(e.getNome());
-        dto.setEndereco(enderecoDto);
-        return dto;
-    }
-
-    private Estadio toEntity(EstadioDTO dto) {
-        Estadio e = new Estadio();
-        e.setNome(dto.getNome());
-        EnderecoDTO ed = dto.getEndereco();
-        if (ed != null) {
-            Endereco end = new Endereco();
-            end.setCep(ed.getCep());
-            end.setLogradouro(ed.getLogradouro());
-            end.setNumero(ed.getNumero());
-            end.setComplemento(ed.getComplemento());
-            end.setBairro(ed.getBairro());
-            end.setCidade(ed.getCidade());
-            end.setUf(ed.getUf());
-            e.setEndereco(end);
-        }
-        return e;
-    }
 }
